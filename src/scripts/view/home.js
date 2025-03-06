@@ -1,7 +1,6 @@
 import Notes from '../data/local/notes.js';
 
 const home = () => {
-  console.log('Home view initialized'); // Untuk debugging
   
   const searchBar = document.querySelector('search-bar');
   const noteList = document.querySelector('note-list');
@@ -12,12 +11,9 @@ const home = () => {
     return;
   }
 
-  // Tampilkan semua notes saat pertama kali
   const notes = Notes.getUnarchived();
-  console.log('Initial notes:', notes); // Untuk debugging
   noteList.notes = notes;
 
-  // Handle pencarian
   if (searchBar) {
     searchBar.addEventListener('search', (event) => {
       const { query } = event.detail;
@@ -26,7 +22,6 @@ const home = () => {
     });
   }
 
-  // Handle submit note baru
   if (noteForm) {
     noteForm.addEventListener('note-submit', (event) => {
       const { title, body } = event.detail;

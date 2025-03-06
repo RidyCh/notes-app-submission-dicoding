@@ -111,6 +111,27 @@ class NoteItem extends HTMLElement {
       `;
   }
 
+  connectedCallback() {
+    document.addEventListener('closeAllDropdowns', (e) => {
+      if (e.detail?.excludeId !== this._note.id) {
+        const dropdownMenu = this._shadowRoot.querySelector('.dropdown-menu');
+        if (dropdownMenu) {
+          dropdownMenu.classList.remove('show');
+        }
+      }
+    });
+  }
+
+  _scrollToForm() {
+    const noteForm = document.querySelector('note-form');
+    if (noteForm) {
+      noteForm.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  }
+
   render() {
     this._emptyContent();
     this._updateStyle();
@@ -126,15 +147,11 @@ class NoteItem extends HTMLElement {
       ${this._style.outerHTML}
       <div class="note-card">
         <div class="dropdown">
-          <button class="dropdown-toggle" onclick="this.nextElementSibling.classList.toggle('show')">⋮</button>
+          <button class="dropdown-toggle">⋮</button>
           <div class="dropdown-menu">
-            <button class="dropdown-item" onclick="handleUpdateNote('${this._note.id}', '${this._note.title.replace(/'/g, "\\'")}', '${this._note.body.replace(/'/g, "\\'")}')">
-              Edit
-            </button>
-            <button class="dropdown-item" onclick="handleDeleteNote('${this._note.id}')">
-              Delete
-            </button>
-            <button class="dropdown-item" onclick="handleArchiveNote('${this._note.id}')">
+            <button class="dropdown-item edit-btn">Edit</button>
+            <button class="dropdown-item delete-btn">Delete</button>
+            <button class="dropdown-item archive-btn">
               ${this._note.archived ? 'Unarchive' : 'Archive'}
             </button>
           </div>
@@ -145,15 +162,55 @@ class NoteItem extends HTMLElement {
       </div>
     `;
 
-    // Menutup dropdown ketika klik di luar
-    document.addEventListener('click', (event) => {
-      const dropdowns = document.querySelectorAll('.dropdown-menu');
-      dropdowns.forEach(dropdown => {
-        if (!event.target.closest('.dropdown')) {
-          dropdown.classList.remove('show');
-        }
-      });
+    const dropdownToggle = this._shadowRoot.querySelector('.dropdown-toggle');
+    const dropdownMenu = this._shadowRoot.querySelector('.dropdown-menu');
+
+    dropdownToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      
+      document.dispatchEvent(new CustomEvent('closeAllDropdowns', {
+        detail: { excludeId: this._note.id }
+      }));
+
+      dropdownMenu.classList.toggle('show');
     });
+
+    this._shadowRoot.querySelector('.edit-btn').addEventListener('click', () => {
+      handleUpdateNote(
+        this._note.id,
+        this._note.title,
+        this._note.body
+      );
+      dropdownMenu.classList.remove('show');
+
+      setTimeout(() => {
+        this._scrollToForm();
+      }, 100);
+    });
+
+    this._shadowRoot.querySelector('.delete-btn').addEventListener('click', () => {
+      handleDeleteNote(this._note.id);
+      dropdownMenu.classList.remove('show');
+    });
+
+    this._shadowRoot.querySelector('.archive-btn').addEventListener('click', () => {
+      handleArchiveNote(this._note.id);
+      dropdownMenu.classList.remove('show');
+    });
+
+    const closeDropdown = (e) => {
+      if (!dropdownToggle.contains(e.target) && !dropdownMenu.contains(e.target)) {
+        dropdownMenu.classList.remove('show');
+      }
+    };
+
+    document.removeEventListener('click', closeDropdown);
+    document.addEventListener('click', closeDropdown);
+  }
+
+  disconnectedCallback() {
+    document.removeEventListener('click', this.closeDropdown);
+    document.removeEventListener('closeAllDropdowns', this.handleCloseDropdowns);
   }
 }
 

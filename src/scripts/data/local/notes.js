@@ -106,56 +106,79 @@ const notesData = [
   },
 ];
 
-console.log(notesData);
+// console.log(notesData);
 
 class Notes {
-  static getAll() {
+  static STORAGE_KEY = 'NOTES_DATA';
+  
+  static getInitialData() {
     return notesData;
   }
 
-  static getArchived() {
-    return notesData.filter(note => note.archived);
-  }
-
-  static getUnarchived() {
-    return notesData.filter(note => !note.archived);
-  }
-
-  static addNote(note) {
-    notesData.push(note);
-  }
-
-  static deleteNote(id) {
-    const index = notesData.findIndex(note => note.id === id);
-    if (index !== -1) {
-      notesData.splice(index, 1);
+  static _initializeData() {
+    const storedNotes = localStorage.getItem(this.STORAGE_KEY);
+    if (!storedNotes) {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.getInitialData()));
     }
   }
 
+  static getAll() {
+    this._initializeData();
+    return JSON.parse(localStorage.getItem(this.STORAGE_KEY));
+  }
+
+  static getArchived() {
+    const notes = this.getAll();
+    return notes.filter(note => note.archived);
+  }
+
+  static getUnarchived() {
+    const notes = this.getAll();
+    return notes.filter(note => !note.archived);
+  }
+
+  static addNote(note) {
+    const notes = this.getAll();
+    notes.push(note);
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(notes));
+  }
+
+  static deleteNote(id) {
+    const notes = this.getAll();
+    const filteredNotes = notes.filter(note => note.id !== id);
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(filteredNotes));
+  }
+
   static updateNote(id, updatedNote) {
-    const index = notesData.findIndex(note => note.id === id);
+    const notes = this.getAll();
+    const index = notes.findIndex(note => note.id === id);
     if (index !== -1) {
-      notesData[index] = { ...notesData[index], ...updatedNote };
+      notes[index] = { ...notes[index], ...updatedNote };
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(notes));
     }
   }
 
   static toggleArchive(id) {
-    const note = notesData.find(note => note.id === id);
+    const notes = this.getAll();
+    const note = notes.find(note => note.id === id);
     if (note) {
       note.archived = !note.archived;
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(notes));
     }
   }
 
   static searchNote(query) {
     if (!query) return this.getUnarchived();
     
-    return notesData.filter((note) => {
+    const notes = this.getAll();
+    return notes.filter((note) => {
       const loweredQuery = query.toLowerCase();
       const loweredTitle = note.title.toLowerCase();
       const loweredBody = note.body.toLowerCase();
       
-      return loweredTitle.includes(loweredQuery) || 
-             loweredBody.includes(loweredQuery);
+      return (loweredTitle.includes(loweredQuery) || 
+              loweredBody.includes(loweredQuery)) &&
+              !note.archived;
     });
   }
 }

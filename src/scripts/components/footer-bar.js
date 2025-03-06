@@ -38,7 +38,7 @@ class FooterBar extends HTMLElement {
     this._shadowRoot.appendChild(this._style);
     this._shadowRoot.innerHTML += `      
         <div>
-          Made by ❤
+          Made by <cite><a href="#">Rendev</a></cite> with ❤️
         </div>
       `;
   }
